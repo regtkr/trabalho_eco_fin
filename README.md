@@ -1,1 +1,1 @@
-# trabalho_eco_fin
+# Trabalho de Ecobometria de Finanças
