@@ -1,1 +1,1 @@
-# Trabalho de Ecobometria de Finanças
+# Trabalho de Econometria de Finanças
