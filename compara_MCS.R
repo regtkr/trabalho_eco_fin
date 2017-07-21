@@ -7,6 +7,8 @@ library(rugarch)
 library(GAS)
 library(MCS)
 library(timeSeries)
+library(parallel)
+
 
 
 #----------------------------------------------------------------------
@@ -14,16 +16,29 @@ library(timeSeries)
 #----------------------------------------------------------------------
 dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt",header=F)
 ret = diff(log(dados$V1))
-tret = as.timeSeries(ret)
+tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 
 
 #----------------------------------------------------------------------
 # RECEITA
 #----------------------------------------------------------------------
-# 1. Fit an ARMA+GARCH model to your return series. You can do this by ugarchfit function in rugarch package in R (you will have to choose what density you want to assume for the standardized residuals).
-# 2. Forecast conditional mean and conditional variance of the assumed parametric density 10 days ahead. You can do this by ugarchroll function in rugarch package in R.
-# 3. Given the forecasted mean and variance of the assumed density, you can obtain the 0.05 quantile of the distribution which will be your 5% VaR (you can use other quantiles, of course). You can do this by function qnorm for the normal density, qt for student density, or generally qsomethingelse for some other density in R.
+# 1. Fit an ARMA+GARCH model to your return series. You can do this by 
+#    ugarchfit function in rugarch package in R (you will have to choose 
+#    what density you want to assume for the standardized residuals).
+# 2. Forecast conditional mean and conditional variance of the assumed 
+#    parametric density 10 days ahead. You can do this by ugarchroll 
+#    function in rugarch package in R.
+# 3. Given the forecasted mean and variance of the assumed density, you 
+#    can obtain the 0.05 quantile of the distribution which will be your 
+#    5% VaR (you can use other quantiles, of course). You can do this by 
+#    function qnorm for the normal density, qt for student density, or 
+#    generally qsomethingelse for some other density in R.
 
+
+# _____________________________________________________________________
+#
+#                                GARCH
+# _____________________________________________________________________
 
 #----------------------------------------------------------------------
 # MODELOS
@@ -44,23 +59,83 @@ spec[9]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NAGARC
 spec[10] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "APARCH"))
 spec[11] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGARCH"))
 
-
 #----------------------------------------------------------------------
 # VaR
 #----------------------------------------------------------------------
 loss = data.frame(matrix(, nrow=2557, ncol=0))
 
 for (i in 1:length(spec)){
-	
-	model_name = paste("modelo_", as.character(i), sep = '') 
+	# Nome dos modelo
+	model_name = paste("GARCH_", as.character(i), sep = '') 
 	print(model_name)
 
-	modelo = ugarchroll(spec[[i]], data = tret, n.ahead = 1, n.start = 5000, VaR.alpha = c(0.05), refit.every = 500)
+	# Aplicando a janela móvel
+	roll = ugarchroll(spec[[i]], data = tret, n.ahead = 1, n.start = 5000, VaR.alpha = c(0.05), refit.every = 500)
 
-	data = as.data.frame(modelo, which="VaR")
+	# Extraindo o VaR
+	VaR = as.data.frame(roll, which="VaR")
+	VaR_sim  = VaR[,1]
+	VaR_real = VaR[,2]
 
-	loss[model_name] = LossVaR(data[,2], data[,1], tau = 0.05)
+	# Calculando a função perda
+	loss[model_name] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
 }
+
+
+# _____________________________________________________________________
+#
+#                                   GAS
+# _____________________________________________________________________
+
+#----------------------------------------------------------------------
+# MODELOS
+#----------------------------------------------------------------------
+spec[12] = UniGASSpec(Dist = 'norm')
+spec[13] = UniGASSpec(Dist = 'snorm')
+spec[14] = UniGASSpec(Dist = 'std')
+spec[15] = UniGASSpec(Dist = 'sstd')
+
+#----------------------------------------------------------------------
+# VaR
+#----------------------------------------------------------------------
+# TODO: Unificar loop com o do GARCH
+for (i in 12:15) {
+	# Nome dos modelo
+	model_name = paste("GAS_", as.character(i-11), sep = '') 
+		print(model_name)
+
+	# Aplicando a janela móvel
+	roll = UniGASRoll(data = tret, 
+		GASSpec = spec[[i]], 
+		Nstart = 5000, 
+		RefitEvery = 500, 
+		RefitWindow = c("moving"))
+
+	# Extraindo o VaR
+	VaR_sim = quantile(roll, 0.05)
+
+	# Gráficos 
+	# plot(ret[-(1:5000)], type='l', col='red')
+	# lines(VaR)
+
+	# Calculando a função perda
+	loss[model_name] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
+}
+
+# _____________________________________________________________________
+#
+#                          STOCHASTIC VOLATILITY
+# _____________________________________________________________________
+
+#----------------------------------------------------------------------
+# MODELOS
+#----------------------------------------------------------------------
+
+
+#----------------------------------------------------------------------
+# VaR
+#----------------------------------------------------------------------
+
 
 
 #----------------------------------------------------------------------
