@@ -135,7 +135,6 @@ draws = svsample(
 	tret,
 	draws = 4000, 
 	burnin = 100, 
-	thin = 10,
 	priormu = c(-10, 1), 
 	priorphi = c(20, 1.2), 
 	priorsigma = 0.2)
