@@ -54,17 +54,31 @@ tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 #----------------------------------------------------------------------
 spec = list()
 
-spec[1]  = ugarchspec(variance.model = list(model = "sGARCH"))
-spec[2]  = ugarchspec(variance.model = list(model = "eGARCH"))
-spec[3]  = ugarchspec(variance.model = list(model = "iGARCH"))
-spec[4]  = ugarchspec(variance.model = list(model = "csGARCH"))
-spec[5]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GARCH"))
-spec[6]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "TGARCH"))
-spec[7]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "AVGARCH"))
-spec[8]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GARCH"))
-spec[9]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NAGARCH"))
-spec[10] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "APARCH"))
-spec[11] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGARCH"))
+# NORMAIS
+spec[1]  = ugarchspec(variance.model = list(model = "sGARCH"), distribution.model = 'norm')
+spec[2]  = ugarchspec(variance.model = list(model = "eGARCH"), distribution.model = 'norm')
+spec[3]  = ugarchspec(variance.model = list(model = "iGARCH"), distribution.model = 'norm')
+spec[4]  = ugarchspec(variance.model = list(model = "csGARCH"), distribution.model = 'norm')
+spec[5]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GARCH"), distribution.model = 'norm')
+spec[6]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "TGARCH"), distribution.model = 'norm')
+spec[7]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "AVGARCH"), distribution.model = 'norm')
+spec[8]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NGARCH"), distribution.model = 'norm')
+spec[9]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NAGARCH"), distribution.model = 'norm')
+spec[10] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "APARCH"), distribution.model = 'norm')
+spec[11] = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGARCH"), distribution.model = 'norm')
+
+# T-STUDENT
+spec[12]  = ugarchspec(variance.model = list(model = "sGARCH"), distribution.model = "std")
+spec[13]  = ugarchspec(variance.model = list(model = "eGARCH"), distribution.model = "std")
+spec[14]  = ugarchspec(variance.model = list(model = "iGARCH"), distribution.model = "std")
+spec[15]  = ugarchspec(variance.model = list(model = "csGARCH"), distribution.model = "std")
+spec[16]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GARCH"), distribution.model = "std")
+spec[17]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "TGARCH"), distribution.model = "std")
+spec[18]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "AVGARCH"), distribution.model = "std")
+spec[19]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NGARCH"), distribution.model = "std")
+spec[20]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "NAGARCH"), distribution.model = "std")
+spec[21]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "APARCH"), distribution.model = "std")
+spec[22]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGARCH"), distribution.model = "std")
 
 #----------------------------------------------------------------------
 # VaR
@@ -74,9 +88,10 @@ loss = data.frame(matrix(, nrow=500, ncol=0))
 for (i in 1:length(spec)){
 	# Nome dos modelo
 	tipo         = spec[[i]]@model$modeldesc$vmodel
+	subtipo      = spec[[i]]@model$modeldesc$vsubmodel
 	distribuicao = spec[[i]]@model$modeldesc$distribution
 
-	model_name = paste(tipo, distribuicao, sep = '_') 
+	model_name = paste(tipo, subtipo, distribuicao, sep = '_') 
 	print(model_name)
 	
 	# Aplicando a janela móvel
