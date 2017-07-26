@@ -15,7 +15,9 @@ library(stochvol)
 #----------------------------------------------------------------------
 # DADOS
 #----------------------------------------------------------------------
-dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt",header=F)
+dados = read.table(
+	"/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt",
+	header=F)
 ret = diff(log(dados$V1))
 
 # selecionando as primeiras linhas para ser mais rápido
@@ -77,7 +79,11 @@ for (i in 1:length(spec)){
 	print(model_name)
 
 	# Aplicando a janela móvel
-	roll = ugarchroll(spec[[i]], data = tret, n.ahead = 1, n.start = 1500, VaR.alpha = c(0.05), refit.every = 50)
+	roll = ugarchroll(spec[[i]], data = tret, 
+		n.ahead = 1, 
+		n.start = 1500, 
+		VaR.alpha = c(0.05), 
+		refit.every = 50)
 
 	# Extraindo o VaR
 	VaR = as.data.frame(roll, which="VaR")
@@ -166,8 +172,9 @@ for (i in 1:length(VaR_sim)) {
 	VaR_sim[i] = quantile(previsao, 0.05) + m
 }
 
-plot(tret, type = 'l', col = 'red')
-lines(VaR_sim)
+plot(tret[1501:2000], type = 'l', col = 'red')
+VaR_sim = ts(VaR_sim, start = c(1980,1,1), frequency = 365)
+lines(VaR_sim[1501:2000])
 
 loss['SV'] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
 
