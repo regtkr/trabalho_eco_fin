@@ -9,7 +9,7 @@ library(MCS)
 library(timeSeries)
 library(parallel)
 library(stochvol)
-
+library(stargazer)
 
 
 #----------------------------------------------------------------------
@@ -56,8 +56,6 @@ spec = list()
 
 spec[1]  = ugarchspec(variance.model = list(model = "sGARCH"))
 spec[2]  = ugarchspec(variance.model = list(model = "eGARCH"))
-# spec[3]  = ugarchspec(variance.model = list(model = "girGARCH"))
-# spec[3]  = ugarchspec(variance.model = list(model = "appGARCH"))
 spec[3]  = ugarchspec(variance.model = list(model = "iGARCH"))
 spec[4]  = ugarchspec(variance.model = list(model = "csGARCH"))
 spec[5]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GARCH"))
@@ -146,6 +144,15 @@ for (i in 12:15) {
 
 m = mean(tret)
 
+# https://stats.stackexchange.com/questions/12232/
+# calculating-the-parameters-of-a-beta-distribution-using-the-mean-and-variance
+estBetaParams <- function(mu, var) {
+  alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+  beta <- alpha * (1 / mu - 1)
+  return(params = list(alpha = alpha, beta = beta))
+}
+
+
 #----------------------------------------------------------------------
 # VaR
 #----------------------------------------------------------------------
@@ -155,32 +162,63 @@ VaR_sim = vector(mode = "numeric", length = 500)
 for (i in 1:length(VaR_sim)) {
 	print(i)
 
-	draws = svsample(
-		tret[seq(i,1500+i-1)] - m,
-		draws = 1000, 
-		burnin = 100, 
-		priormu = c(-10, 1), 
-		priorphi = c(20, 1.2), 
-		priorsigma = 0.2,
-		designmatrix = "ar1", 
-		quiet = TRUE)
+	if (i == 1) {
+		draws = svsample(
+			tret[seq(i,1500+i-1)] - m,
+			draws = 20000, 
+			burnin = 2000, 
+			# priormu = c(-10, 1), 
+			# priorphi = c(20, 1.2), 
+			# priorsigma = 0.2,
+			designmatrix = "ar1", 
+			quiet = TRUE)
+	} else {
+		param      = summary(draws)
+		priormu    = c(param$para[1,1], param$para[1,2])
+		priorphi   = estBetaParams(param$para[2,1], param$para[2,2]^2)
+		priorphi   = c(priorphi$alpha, priorphi$beta)
+		priorsigma = param$para[3,2]
+		draws = svsample(
+			tret[seq(i,1500+i-1)] - m,
+			draws = 2000, 
+			burnin = 200, 
+			priormu = priormu, 
+			priorphi = priorphi, 
+			priorsigma = priorsigma ,
+			designmatrix = "ar1",
+			startpara = list(
+				mu   = param$para[1,1], 
+				phi  = param$para[2,1],
+				sigma = param$para[3,1]), 
+			quiet = TRUE)
+		# plot(draws)
+	}
+	
 
 	prev = predict(draws, step = 1)
 
 	previsao = arpredict(draws, prev)
 
 	VaR_sim[i] = quantile(previsao, 0.05) + m
+
 }
 
 plot(tret[1501:2000], type = 'l', col = 'red')
-VaR_sim = ts(VaR_sim, start = c(1980,1,1), frequency = 365)
-lines(VaR_sim[1501:2000])
+lines(VaR_sim[1:500])
 
 loss['SV'] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
 
 
-#----------------------------------------------------------------------
-# COMPARANDO
-#----------------------------------------------------------------------
+
+# _____________________________________________________________________
+#
+#                                COMPARANDO
+# _____________________________________________________________________
+
 comparacao = MCSprocedure(Loss=loss,alpha=0.2,B=5000,statistic='Tmax',cl=NULL)
 
+
+# _____________________________________________________________________
+#
+#                                TABELAS
+# _____________________________________________________________________
