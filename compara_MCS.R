@@ -131,13 +131,39 @@ for (i in 12:15) {
 #----------------------------------------------------------------------
 # MODELOS
 #----------------------------------------------------------------------
-draws = svsample(
-	tret,
-	draws = 4000, 
+faixa = 1:2000
+tret = tret[faixa]
+periodo = 1:1500
+
+m = mean(tret)
+
+treino = tret[ periodo] - m
+teste  = tret[-periodo] - m
+
+VaR = vector(mode = "numeric", length = 500)
+
+for (i in 1:length(VaR)) {
+	plot(i)
+
+	draws = svsample(
+	tret[seq(i,1500+i-1)],
+	draws = 1000, 
 	burnin = 100, 
 	priormu = c(-10, 1), 
 	priorphi = c(20, 1.2), 
-	priorsigma = 0.2)
+	priorsigma = 0.2,
+	designmatrix = "ar1")
+
+prev = predict(draws, step = 1)
+
+previsao = arpredict(draws, prev)
+
+VaR_sim[i] = quantile(previsao, 0.05) + m
+
+}
+
+plot(teste+m, type = 'l', col = 'red')
+lines(VaR_sim)
 
 #----------------------------------------------------------------------
 # VaR
