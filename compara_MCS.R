@@ -73,9 +73,12 @@ loss = data.frame(matrix(, nrow=500, ncol=0))
 
 for (i in 1:length(spec)){
 	# Nome dos modelo
-	model_name = paste("GARCH_", as.character(i), sep = '') 
-	print(model_name)
+	tipo         = spec[[i]]@model$modeldesc$vmodel
+	distribuicao = spec[[i]]@model$modeldesc$distribution
 
+	model_name = paste(tipo, distribuicao, sep = '_') 
+	print(model_name)
+	
 	# Aplicando a janela móvel
 	roll = ugarchroll(spec[[i]], data = tret, 
 		n.ahead = 1, 
@@ -112,7 +115,7 @@ spec[15] = UniGASSpec(Dist = 'sstd')
 # TODO: Unificar loop com o do GARCH
 for (i in 12:15) {
 	# Nome dos modelo
-	model_name = paste("GAS_", as.character(i-11), sep = '') 
+	model_name = paste("GAS", spec[[i]]@Spec$Dist, sep = '_') 
 		print(model_name)
 
 	# Aplicando a janela móvel
@@ -225,6 +228,7 @@ comparacao = MCSprocedure(Loss=loss,alpha=0.2,B=5000,statistic='Tmax',cl=NULL)
 
 tabela = comparacao@show
 
+tabela[,7] = 1000 * tabela[,7]
 
 sink(file = "./tabelas/sp500.tex")
 stargazer(tabela,
