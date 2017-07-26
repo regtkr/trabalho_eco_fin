@@ -10,33 +10,44 @@ library(timeSeries)
 library(parallel)
 library(stochvol)
 library(stargazer)
+library(gdata)
+library(xts)
 
 
 #----------------------------------------------------------------------
 # DADOS
 #----------------------------------------------------------------------
-dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
-ret = diff(log(dados$V1))
+# dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
+# ret = diff(log(dados$V1))
 
-# selecionando as primeiras linhas para ser mais rápido
-faixa = 1:2000
+# # selecionando as primeiras linhas para ser mais rápido
+# faixa = 1:2000
 
-ret = ret[faixa]
+# ret = ret[faixa]
 
-tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
+# tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 
+data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/ibovespa.xls")
+data$Data = as.Date(data$Data)
+indice = zoo(data$Fechamento, order.by = data$Data)
+indice = xts(indice)
+
+tret = diff(log(indice))
+
+plot(tret)
 
 #----------------------------------------------------------------------
 # Parametros iniciais
 #----------------------------------------------------------------------
-inicio = 1500
+inicio = 2000
 fim    = length(tret)
 delta  = fim - inicio
 
-refit = 50
+refit = 25
 alpha = 0.05
 
-salvar_tabela = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/tabelas/sp500.tex"
+diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
+salvar_tabela = paste(diretorio, "tabelas/ibovespa.tex", sep = "")
 
 
 #----------------------------------------------------------------------
