@@ -15,9 +15,7 @@ library(stargazer)
 #----------------------------------------------------------------------
 # DADOS
 #----------------------------------------------------------------------
-dados = read.table(
-	"/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt",
-	header=F)
+dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
 ret = diff(log(dados$V1))
 
 # selecionando as primeiras linhas para ser mais rápido
@@ -34,6 +32,11 @@ tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 inicio = 1500
 fim    = length(tret)
 delta  = fim - inicio
+
+refit = 50
+alpha = 0.05
+
+salvar_tabela = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/tabelas/sp500.tex"
 
 
 #----------------------------------------------------------------------
@@ -106,8 +109,8 @@ for (i in 1:length(spec)){
 	roll = ugarchroll(spec[[i]], data = tret, 
 		n.ahead = 1, 
 		n.start = inicio, 
-		VaR.alpha = c(0.05), 
-		refit.every = 50)
+		VaR.alpha = c(alpha), 
+		refit.every = refit)
 
 	# Extraindo o VaR
 	VaR = as.data.frame(roll, which="VaR")
@@ -139,17 +142,17 @@ spec[26] = UniGASSpec(Dist = 'sstd')
 for (i in 12:15) {
 	# Nome dos modelo
 	model_name = paste("GAS", spec[[i]]@Spec$Dist, sep = '_') 
-		print(model_name)
+	print(model_name)
 
 	# Aplicando a janela móvel
 	roll = UniGASRoll(data = tret, 
 		GASSpec = spec[[i]], 
 		Nstart = inicio, 
-		RefitEvery = 50, 
+		RefitEvery = refit, 
 		RefitWindow = c("moving"))
 
 	# Extraindo o VaR
-	VaR_sim = quantile(roll, 0.05)
+	VaR_sim = quantile(roll, alpha)
 
 	# Gráficos 
 	# plot(ret[-(1:5000)], type='l', col='red')
@@ -225,7 +228,7 @@ for (i in 1:length(VaR_sim)) {
 
 	previsao = arpredict(draws, prev)
 
-	VaR_sim[i] = quantile(previsao, 0.05) + m
+	VaR_sim[i] = quantile(previsao, alpha) + m
 
 }
 
@@ -253,7 +256,7 @@ tabela = comparacao@show
 
 tabela[,7] = 1000 * tabela[,7]
 
-sink(file = "./tabelas/sp500.tex")
+sink(file = salvar_tabela)
 stargazer(tabela,
           title="Teste StarGazer",
           align=FALSE, dep.var.labels=c("sp500"),
