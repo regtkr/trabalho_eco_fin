@@ -29,6 +29,14 @@ tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 
 
 #----------------------------------------------------------------------
+# Parametros iniciais
+#----------------------------------------------------------------------
+inicio = 1500
+fim    = length(tret)
+delta  = fim - inicio
+
+
+#----------------------------------------------------------------------
 # RECEITA
 #----------------------------------------------------------------------
 # 1. Fit an ARMA+GARCH model to your return series. You can do this by 
@@ -83,7 +91,7 @@ spec[22]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGA
 #----------------------------------------------------------------------
 # VaR
 #----------------------------------------------------------------------
-loss = data.frame(matrix(, nrow=500, ncol=0))
+loss = data.frame(matrix(, nrow=delta, ncol=0))
 
 for (i in 1:length(spec)){
 	# Nome dos modelo
@@ -97,7 +105,7 @@ for (i in 1:length(spec)){
 	# Aplicando a janela móvel
 	roll = ugarchroll(spec[[i]], data = tret, 
 		n.ahead = 1, 
-		n.start = 1500, 
+		n.start = inicio, 
 		VaR.alpha = c(0.05), 
 		refit.every = 50)
 
@@ -119,10 +127,10 @@ for (i in 1:length(spec)){
 #----------------------------------------------------------------------
 # MODELOS
 #----------------------------------------------------------------------
-spec[12] = UniGASSpec(Dist = 'norm')
-spec[13] = UniGASSpec(Dist = 'snorm')
-spec[14] = UniGASSpec(Dist = 'std')
-spec[15] = UniGASSpec(Dist = 'sstd')
+spec[23] = UniGASSpec(Dist = 'norm')
+spec[24] = UniGASSpec(Dist = 'snorm')
+spec[25] = UniGASSpec(Dist = 'std')
+spec[26] = UniGASSpec(Dist = 'sstd')
 
 #----------------------------------------------------------------------
 # VaR
@@ -136,7 +144,7 @@ for (i in 12:15) {
 	# Aplicando a janela móvel
 	roll = UniGASRoll(data = tret, 
 		GASSpec = spec[[i]], 
-		Nstart = 1500, 
+		Nstart = inicio, 
 		RefitEvery = 50, 
 		RefitWindow = c("moving"))
 
@@ -175,14 +183,14 @@ estBetaParams <- function(mu, var) {
 # VaR
 #----------------------------------------------------------------------
 
-VaR_sim = vector(mode = "numeric", length = 500)
+VaR_sim = vector(mode = "numeric", length = delta)
 
 for (i in 1:length(VaR_sim)) {
 	print(i)
 
 	if (i == 1) {
 		draws = svsample(
-			tret[seq(i,1500+i-1)] - m,
+			tret[seq(i,inicio+i-1)] - m,
 			draws = 20000, 
 			burnin = 2000, 
 			# priormu = c(-10, 1), 
@@ -197,7 +205,7 @@ for (i in 1:length(VaR_sim)) {
 		priorphi   = c(priorphi$alpha, priorphi$beta)
 		priorsigma = param$para[3,2]
 		draws = svsample(
-			tret[seq(i,1500+i-1)] - m,
+			tret[seq(i,inicio+i-1)] - m,
 			draws = 2000, 
 			burnin = 200, 
 			priormu = priormu, 
@@ -221,8 +229,8 @@ for (i in 1:length(VaR_sim)) {
 
 }
 
-plot(tret[1501:2000], type = 'l', col = 'red')
-lines(VaR_sim[1:500])
+# plot(tret[1501:2000], type = 'l', col = 'red')
+# lines(VaR_sim[1:500])
 
 loss['SV'] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
 
