@@ -222,3 +222,25 @@ comparacao = MCSprocedure(Loss=loss,alpha=0.2,B=5000,statistic='Tmax',cl=NULL)
 #
 #                                TABELAS
 # _____________________________________________________________________
+
+tabela = comparacao@show
+
+
+sink(file = "./tabelas/sp500.tex")
+stargazer(tabela,
+          title="Teste StarGazer",
+          align=FALSE, dep.var.labels=c("sp500"),
+          covariate.labels=c("Modelo",
+          	                 "$Rank_{R,M}$"  , "$t_{ij}$", "$p_{R,M}$",
+          	                 "$Rank_{max,M}$", "$t_{ij}$", "$p_{max,M}$",
+          	                 "$Perda \\times 10^3$"),
+          digits = 3,
+          omit.stat=c(), no.space=TRUE)
+sink()
+
+# xtable(tabela,
+# 	Name = c("Modelo",
+#           	 "$Rank_{R,M}$"  , "$t_{ij}$", "$p_{R,M}$",
+#           	 "$Rank_{max,M}$", "$t_{ij}$", "$p_{max,M}$",
+#           	 "$Loss x 10^3$"), 
+# 	display = c('s','d','f','f','d','f','f','f'))
