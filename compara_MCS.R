@@ -17,6 +17,10 @@ library(xts)
 #----------------------------------------------------------------------
 # DADOS
 #----------------------------------------------------------------------
+
+#*********************************************
+# S&P 500
+#*********************************************
 # dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
 # ret = diff(log(dados$V1))
 
@@ -27,12 +31,57 @@ library(xts)
 
 # tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 
-data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/ibovespa.xls")
+#----------------------------------------------------------------------
+# Parametros iniciais
+#----------------------------------------------------------------------
+# inicio = 2000
+# fim    = length(tret)
+# delta  = fim - inicio
+
+# refit = 25
+# alpha = 0.05
+
+# diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
+# salvar_tabela = paste(diretorio, "tabelas/ibovespa.tex", sep = "")
+
+
+#*********************************************
+# IBOVESPA
+#*********************************************
+# data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/ibovespa.xls")
+# data$Data = as.Date(data$Data)
+# indice = zoo(data$Fechamento, order.by = data$Data)
+# indice = xts(indice)
+
+# tret = diff(log(indice))
+# tret = tret[!is.na(tret)]
+
+# plot(tret)
+
+# #----------------------------------------------------------------------
+# # Parametros iniciais
+# #----------------------------------------------------------------------
+# inicio = 2000
+# fim    = length(tret)
+# delta  = fim - inicio
+
+# refit = 25
+# alpha = 0.05
+
+# diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
+# salvar_tabela = paste(diretorio, "tabelas/ibovespa", sep = "")
+
+
+#*********************************************
+# PETROBRAS
+#*********************************************
+data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/petr4.xls")
 data$Data = as.Date(data$Data)
 indice = zoo(data$Fechamento, order.by = data$Data)
 indice = xts(indice)
 
 tret = diff(log(indice))
+tret = tret[!is.na(tret)]
 
 plot(tret)
 
@@ -47,7 +96,7 @@ refit = 25
 alpha = 0.05
 
 diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
-salvar_tabela = paste(diretorio, "tabelas/ibovespa.tex", sep = "")
+salvar_tabela = paste(diretorio, "tabelas/petr4", sep = "")
 
 
 #----------------------------------------------------------------------
@@ -106,6 +155,7 @@ spec[22]  = ugarchspec(variance.model = list(model = "fGARCH", submodel = "GJRGA
 # VaR
 #----------------------------------------------------------------------
 loss = data.frame(matrix(, nrow=delta, ncol=0))
+simulacoes = loss = data.frame(matrix(, nrow=delta, ncol=0))
 
 for (i in 1:length(spec)){
 	# Nome dos modelo
@@ -128,9 +178,13 @@ for (i in 1:length(spec)){
 	VaR_sim  = VaR[,1]
 	VaR_real = VaR[,2]
 
+	# Guardando os dados
+	simulacoes[model_name] = VaR_sim
 	# Calculando a função perda
 	loss[model_name] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
 }
+
+simulacoes['real'] = VaR_real
 
 
 # _____________________________________________________________________
@@ -142,15 +196,15 @@ for (i in 1:length(spec)){
 # MODELOS
 #----------------------------------------------------------------------
 spec[23] = UniGASSpec(Dist = 'norm')
-spec[24] = UniGASSpec(Dist = 'snorm')
-spec[25] = UniGASSpec(Dist = 'std')
-spec[26] = UniGASSpec(Dist = 'sstd')
+# spec[24] = UniGASSpec(Dist = 'snorm')
+spec[24] = UniGASSpec(Dist = 'std')
+# spec[26] = UniGASSpec(Dist = 'sstd')
 
 #----------------------------------------------------------------------
 # VaR
 #----------------------------------------------------------------------
 # TODO: Unificar loop com o do GARCH
-for (i in 12:15) {
+for (i in 23:26) {
 	# Nome dos modelo
 	model_name = paste("GAS", spec[[i]]@Spec$Dist, sep = '_') 
 	print(model_name)
@@ -169,8 +223,11 @@ for (i in 12:15) {
 	# plot(ret[-(1:5000)], type='l', col='red')
 	# lines(VaR)
 
+	# Guardando os dados
+	simulacoes[model_name] = VaR_sim
+
 	# Calculando a função perda
-	loss[model_name] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
+	loss[model_name] = LossVaR(VaR_real, VaR_sim, tau = alpha)
 }
 
 # _____________________________________________________________________
@@ -202,11 +259,18 @@ VaR_sim = vector(mode = "numeric", length = delta)
 for (i in 1:length(VaR_sim)) {
 	print(i)
 
-	if (i == 1) {
+	# draws = svsample(
+	# 	tret[seq(i,inicio+i-1)] - m,
+	# 	draws  = 4000, 
+	# 	burnin = 1000,
+	# 	designmatrix = "ar1", 
+	# 	quiet = TRUE)
+
+	if ( ((i / refit) - (i %/% refit) == 0) | i == 1) {
 		draws = svsample(
 			tret[seq(i,inicio+i-1)] - m,
-			draws = 20000, 
-			burnin = 2000, 
+			draws = 10000, 
+			burnin = 1000, 
 			# priormu = c(-10, 1), 
 			# priorphi = c(20, 1.2), 
 			# priorsigma = 0.2,
@@ -215,13 +279,13 @@ for (i in 1:length(VaR_sim)) {
 	} else {
 		param      = summary(draws)
 		priormu    = c(param$para[1,1], param$para[1,2])
-		priorphi   = estBetaParams(param$para[2,1], param$para[2,2]^2)
+		priorphi   = estBetaParams(param$para[2,1], sqrt(param$para[2,2])^2)
 		priorphi   = c(priorphi$alpha, priorphi$beta)
 		priorsigma = param$para[3,2]
 		draws = svsample(
 			tret[seq(i,inicio+i-1)] - m,
-			draws = 2000, 
-			burnin = 200, 
+			draws = 1000, 
+			burnin = 100, 
 			priormu = priormu, 
 			priorphi = priorphi, 
 			priorsigma = priorsigma ,
@@ -243,10 +307,13 @@ for (i in 1:length(VaR_sim)) {
 
 }
 
-# plot(tret[1501:2000], type = 'l', col = 'red')
-# lines(VaR_sim[1:500])
+plot(tret[inicio:fim], type = 'l', col = 'red')
+lines(VaR_sim)
 
 loss['SV'] = LossVaR(VaR_real, VaR_sim, tau = 0.05)
+
+# Guardando os dados
+simulacoes['SV'] = VaR_sim
 
 
 
@@ -265,9 +332,15 @@ comparacao = MCSprocedure(Loss=loss,alpha=0.2,B=5000,statistic='Tmax',cl=NULL)
 
 tabela = comparacao@show
 
+tabela = tabela[order(tabela[,2]),]
+
 tabela[,7] = 1000 * tabela[,7]
 
-sink(file = salvar_tabela)
+write.csv(tabela, paste(salvar_tabela, '-bruta.csv', sep = ''))
+write.csv(simulacoes, paste(salvar_tabela, '-simulacoes.csv', sep = ''))
+write.csv(loss, paste(salvar_tabela, '-loss.csv', sep = ''))
+
+sink(file = paste(salvar_tabela, '-tabela.tex', sep = ''))
 stargazer(tabela,
           title="Teste StarGazer",
           align=FALSE, dep.var.labels=c("sp500"),
