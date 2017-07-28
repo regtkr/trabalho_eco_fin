@@ -21,28 +21,29 @@ library(xts)
 #*********************************************
 # S&P 500
 #*********************************************
-# dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
-# ret = diff(log(dados$V1))
+dados = read.table("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/sp500.txt", header=F)
+ret = diff(log(dados$V1))
 
-# # selecionando as primeiras linhas para ser mais rápido
+# selecionando as primeiras linhas para ser mais rápido
 # faixa = 1:2000
 
 # ret = ret[faixa]
 
-# tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
+tret = ts(ret, start = c(1980,1,1), frequency = 365) # Data ficticia, melhorar
 
 #----------------------------------------------------------------------
 # Parametros iniciais
 #----------------------------------------------------------------------
-# inicio = 2000
-# fim    = length(tret)
-# delta  = fim - inicio
+inicio = 5000
+fim    = length(tret)
+delta  = fim - inicio
 
-# refit = 25
-# alpha = 0.05
+refit = 50
+alpha = 0.05
 
-# diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
-# salvar_tabela = paste(diretorio, "tabelas/ibovespa.tex", sep = "")
+diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
+salvar_tabela = paste(diretorio, "tabelas/sp500", sep = "")
+
 
 
 #*********************************************
@@ -75,28 +76,28 @@ library(xts)
 #*********************************************
 # PETROBRAS
 #*********************************************
-data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/petr4.xls")
-data$Data = as.Date(data$Data)
-indice = zoo(data$Fechamento, order.by = data$Data)
-indice = xts(indice)
+# data = read.xls("/home/regis/Dropbox/econometriafinanças2017/parte3-volatilidade/petr4.xls")
+# data$Data = as.Date(data$Data)
+# indice = zoo(data$Fechamento, order.by = data$Data)
+# indice = xts(indice)
 
-tret = diff(log(indice))
-tret = tret[!is.na(tret)]
+# tret = diff(log(indice))
+# tret = tret[!is.na(tret)]
 
-plot(tret)
+# plot(tret)
 
-#----------------------------------------------------------------------
-# Parametros iniciais
-#----------------------------------------------------------------------
-inicio = 2000
-fim    = length(tret)
-delta  = fim - inicio
+# #----------------------------------------------------------------------
+# # Parametros iniciais
+# #----------------------------------------------------------------------
+# inicio = 2000
+# fim    = length(tret)
+# delta  = fim - inicio
 
-refit = 25
-alpha = 0.05
+# refit = 25
+# alpha = 0.05
 
-diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
-salvar_tabela = paste(diretorio, "tabelas/petr4", sep = "")
+# diretorio = "/mnt/84DC97E6DC97D0B2/Mestrado/Econometria\ de\ Financas/trabalho_eco_fin/"
+# salvar_tabela = paste(diretorio, "tabelas/petr4", sep = "")
 
 
 #----------------------------------------------------------------------
@@ -204,7 +205,7 @@ spec[24] = UniGASSpec(Dist = 'std')
 # VaR
 #----------------------------------------------------------------------
 # TODO: Unificar loop com o do GARCH
-for (i in 23:26) {
+for (i in 23:24) {
 	# Nome dos modelo
 	model_name = paste("GAS", spec[[i]]@Spec$Dist, sep = '_') 
 	print(model_name)
@@ -266,7 +267,7 @@ for (i in 1:length(VaR_sim)) {
 	# 	designmatrix = "ar1", 
 	# 	quiet = TRUE)
 
-	if ( ((i / refit) - (i %/% refit) == 0) | i == 1) {
+	if ( ( (i/refit - i%/%refit) == 0) | i == 1) {
 		draws = svsample(
 			tret[seq(i,inicio+i-1)] - m,
 			draws = 10000, 
